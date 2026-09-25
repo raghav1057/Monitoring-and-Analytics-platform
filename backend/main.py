@@ -191,7 +191,16 @@ async def create_event(event: EventCreate, db: Session = Depends(get_db)):
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Confidence must be between 0 and 1"
         )
-    
+
+    # Skip double events: same car, same camera, within 60 seconds
+    from matcher import is_duplicate
+    last = db.query(Event).filter(
+        Event.camera_id == event.camera_id,
+        Event.vehicle_number == event.vehicle_number,
+    ).order_by(Event.timestamp.desc()).first()
+    if last and is_duplicate(last.timestamp, event.timestamp):
+        return last
+
     db_event = Event(**event.model_dump())
     db.add(db_event)
     db.commit()
