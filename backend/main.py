@@ -423,13 +423,25 @@ def get_stats(db: Session = Depends(get_db)):
     
     active_alerts = db.query(Alert).filter(Alert.alert_status == "ACTIVE").count()
     total_events = db.query(Event).count()
-    
+    degraded_cameras = db.query(Camera).filter(Camera.status == "Degraded").count()
+    recent = db.query(Event).order_by(Event.timestamp.desc()).limit(5).all()
+
     return {
         "total_cameras": total_cameras,
         "online_cameras": online_cameras,
+        "degraded_cameras": degraded_cameras,
         "offline_cameras": offline_cameras,
         "active_alerts": active_alerts,
-        "total_events": total_events
+        "total_events": total_events,
+        "recent_events": [
+            {
+                "vehicle_number": e.vehicle_number,
+                "camera_id": e.camera_id,
+                "confidence": e.confidence,
+                "timestamp": e.timestamp.isoformat() if e.timestamp else None,
+            }
+            for e in recent
+        ],
     }
 
 
