@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from datetime import datetime
 from typing import Optional, Dict, Any
 
@@ -21,6 +21,9 @@ class CameraUpdate(BaseModel):
     name: Optional[str] = None
     status: Optional[str] = None
     last_heartbeat: Optional[datetime] = None
+    zone: Optional[str] = None
+    stream_url: Optional[str] = None
+    source_protocol: Optional[str] = None
 
 
 class CameraResponse(BaseModel):
@@ -50,7 +53,7 @@ class EventCreate(BaseModel):
     event_type: str
     vehicle_number: str
     vehicle_type: str
-    confidence: float
+    confidence: float = Field(ge=0, le=1)
     bounding_box: Optional[Dict[str, Any]] = None
 
 
@@ -62,7 +65,8 @@ class EventResponse(BaseModel):
     vehicle_number: str
     vehicle_type: str
     confidence: float
-    created_at: datetime
+    bounding_box: Optional[Dict[str, Any]] = None
+    created_at: Optional[datetime] = None
 
     class Config:
         from_attributes = True
@@ -100,9 +104,9 @@ class AlertCreate(BaseModel):
     matched_entity: str
     entity_type: str
     alert_type: str
-    confidence: float
-    location_lat: float
-    location_lng: float
+    confidence: float = Field(ge=0, le=1)
+    location_lat: Optional[float] = None
+    location_lng: Optional[float] = None
 
 
 class AlertAcknowledge(BaseModel):
@@ -112,19 +116,19 @@ class AlertAcknowledge(BaseModel):
 
 class AlertResponse(BaseModel):
     alert_id: int
-    event_id: int
-    watchlist_id: int
+    event_id: Optional[int] = None
+    watchlist_id: Optional[int] = None
     camera_id: str
     matched_entity: str
     entity_type: str
     alert_type: str
     confidence: float
-    location_lat: float
-    location_lng: float
+    location_lat: Optional[float] = None
+    location_lng: Optional[float] = None
     alert_status: str
-    acknowledged_by: Optional[str]
-    acknowledged_at: Optional[datetime]
-    created_at: datetime
+    acknowledged_by: Optional[str] = None
+    acknowledged_at: Optional[datetime] = None
+    created_at: Optional[datetime] = None
 
     class Config:
         from_attributes = True
