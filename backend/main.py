@@ -1,10 +1,12 @@
-from fastapi import FastAPI, Depends, HTTPException, status
+from fastapi import FastAPI, Depends, HTTPException, status, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from datetime import datetime, timezone
 from contextlib import asynccontextmanager
 import os
 from dotenv import load_dotenv
+
+from realtime import hub
 
 from database import get_db, init_db, Camera, Event, Watchlist, Alert
 from schemas import (
@@ -132,7 +134,7 @@ def delete_camera(camera_id: str, db: Session = Depends(get_db)):
 # ===== EVENT ENDPOINTS =====
 
 @app.post("/api/events", response_model=EventResponse)
-def create_event(event: EventCreate, db: Session = Depends(get_db)):
+async def create_event(event: EventCreate, db: Session = Depends(get_db)):
     """Receive detection event from AI model"""
     
     # Validate camera exists
@@ -154,7 +156,16 @@ def create_event(event: EventCreate, db: Session = Depends(get_db)):
     db.add(db_event)
     db.commit()
     db.refresh(db_event)
-    
+
+    await hub.broadcast("events", {
+        "type": "event",
+        "event_id": db_event.event_id,
+        "camera_id": db_event.camera_id,
+        "vehicle_number": db_event.vehicle_number,
+        "confidence": db_event.confidence,
+        "timestamp": db_event.timestamp.isoformat() if db_event.timestamp else None,
+    })
+
     return db_event
 
 
@@ -227,13 +238,21 @@ def get_watchlist_entry(entity_id: str, db: Session = Depends(get_db)):
 # ===== ALERT ENDPOINTS =====
 
 @app.post("/api/alerts", response_model=AlertResponse)
-def create_alert(alert: AlertCreate, db: Session = Depends(get_db)):
+async def create_alert(alert: AlertCreate, db: Session = Depends(get_db)):
     """Create an alert (internal use)"""
     db_alert = Alert(**alert.model_dump())
     db.add(db_alert)
     db.commit()
     db.refresh(db_alert)
-    
+
+    await hub.broadcast("alerts", {
+        "type": "alert",
+        "alert_id": db_alert.alert_id,
+        "camera_id": db_alert.camera_id,
+        "matched_entity": db_alert.matched_entity,
+        "confidence": db_alert.confidence,
+    })
+
     return db_alert
 
 
@@ -275,6 +294,28 @@ def acknowledge_alert(
     db.commit()
     db.refresh(alert)
     return alert
+
+
+# ===== REALTIME =====
+
+@app.websocket("/ws/events")
+async def ws_events(ws: WebSocket):
+    await hub.connect("events", ws)
+    try:
+        while True:
+            await ws.receive_text()
+    except WebSocketDisconnect:
+        hub.disconnect("events", ws)
+
+
+@app.websocket("/ws/alerts")
+async def ws_alerts(ws: WebSocket):
+    await hub.connect("alerts", ws)
+    try:
+        while True:
+            await ws.receive_text()
+    except WebSocketDisconnect:
+        hub.disconnect("alerts", ws)
 
 
 # ===== DASHBOARD STATS =====
