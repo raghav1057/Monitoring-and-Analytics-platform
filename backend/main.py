@@ -131,6 +131,46 @@ def delete_camera(camera_id: str, db: Session = Depends(get_db)):
     return {"message": f"Camera {camera_id} deleted"}
 
 
+@app.post("/api/cameras/{camera_id}/heartbeat", response_model=CameraResponse)
+def heartbeat(camera_id: str, db: Session = Depends(get_db)):
+    """Camera says 'I am alive'. Marks it Online."""
+    camera = db.query(Camera).filter(Camera.camera_id == camera_id).first()
+    if not camera:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Camera not found")
+    camera.last_heartbeat = datetime.now(timezone.utc)
+    camera.status = "Online"
+    db.commit()
+    db.refresh(camera)
+    return camera
+
+
+@app.get("/api/cameras/{camera_id}/stream")
+def stream_info(camera_id: str, db: Session = Depends(get_db)):
+    """What feed is this camera on, and is it live?"""
+    camera = db.query(Camera).filter(Camera.camera_id == camera_id).first()
+    if not camera:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Camera not found")
+    protocol = getattr(camera, "source_protocol", "file") or "file"
+    live = False
+    if protocol == "rtsp":
+        live = camera.status == "Online"  # trust heartbeat, don't freeze on probe
+    else:
+        try:
+            from video import make_source
+            src = make_source(protocol, camera.stream_url or camera_id)
+            live = bool(src.open())
+            src.close()
+        except Exception:
+            live = False
+    return {
+        "camera_id": camera.camera_id,
+        "protocol": protocol,
+        "endpoint": camera.stream_url,
+        "status": camera.status,
+        "live": live,
+    }
+
+
 # ===== EVENT ENDPOINTS =====
 
 @app.post("/api/events", response_model=EventResponse)

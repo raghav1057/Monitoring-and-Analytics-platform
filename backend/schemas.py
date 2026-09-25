@@ -13,6 +13,8 @@ class CameraCreate(BaseModel):
     camera_type: str
     stream_url: str
     zone: Optional[str] = None
+    source_protocol: Optional[str] = "file"
+    storage_note: Optional[str] = None
 
 
 class CameraUpdate(BaseModel):
@@ -30,9 +32,11 @@ class CameraResponse(BaseModel):
     camera_type: str
     stream_url: str
     status: str
-    last_heartbeat: datetime
-    zone: Optional[str]
-    created_at: datetime
+    last_heartbeat: Optional[datetime] = None
+    zone: Optional[str] = None
+    source_protocol: Optional[str] = "file"
+    storage_note: Optional[str] = None
+    created_at: Optional[datetime] = None
 
     class Config:
         from_attributes = True

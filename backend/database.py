@@ -29,6 +29,8 @@ class Camera(Base):
     longitude = Column(Float, nullable=False)
     camera_type = Column(String(50))  # Traffic, RTO, Highway, etc.
     stream_url = Column(String(500))
+    source_protocol = Column(String(20), default="file")  # file, rtsp, simulator
+    storage_note = Column(String(200), nullable=True)  # where footage is kept
     status = Column(String(20), default="Offline")  # Online, Offline, Degraded
     last_heartbeat = Column(DateTime, default=datetime.utcnow)
     zone = Column(String(100))
