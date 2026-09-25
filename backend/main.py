@@ -1,7 +1,8 @@
 from fastapi import FastAPI, Depends, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
-from datetime import datetime
+from datetime import datetime, timezone
+from contextlib import asynccontextmanager
 import os
 from dotenv import load_dotenv
 
@@ -15,6 +16,10 @@ from schemas import (
 
 load_dotenv()
 
+CORS_ORIGINS = [o.strip() for o in os.getenv(
+    "CORS_ORIGINS", "http://localhost:5173,http://localhost:3000"
+).split(",") if o.strip()]
+
 app = FastAPI(
     title="CCTV Monitoring Platform API",
     description="Real-time video analytics and alerting system",
@@ -24,23 +29,25 @@ app = FastAPI(
 # Enable CORS for frontend
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=CORS_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Initialize database on startup
-@app.on_event("startup")
-async def startup():
+@asynccontextmanager
+async def lifespan(app: FastAPI):
     init_db()
-    print("✅ Database initialized")
+    print("Database initialized")
+    yield
+
+app.router.lifespan_context = lifespan
 
 
 # ===== HEALTH CHECK =====
 @app.get("/health")
 def health_check():
-    return {"status": "ok", "timestamp": datetime.utcnow()}
+    return {"status": "ok", "timestamp": datetime.now(timezone.utc)}
 
 
 # ===== CAMERA ENDPOINTS =====
@@ -57,7 +64,7 @@ def create_camera(camera: CameraCreate, db: Session = Depends(get_db)):
             detail="Camera with this ID already exists"
         )
     
-    db_camera = Camera(**camera.dict())
+    db_camera = Camera(**camera.model_dump())
     db.add(db_camera)
     db.commit()
     db.refresh(db_camera)
@@ -98,10 +105,10 @@ def update_camera(
             detail="Camera not found"
         )
     
-    for field, value in camera_update.dict(exclude_unset=True).items():
+    for field, value in camera_update.model_dump(exclude_unset=True).items():
         setattr(camera, field, value)
     
-    camera.updated_at = datetime.utcnow()
+    camera.updated_at = datetime.now(timezone.utc)
     db.commit()
     db.refresh(camera)
     return camera
@@ -143,7 +150,7 @@ def create_event(event: EventCreate, db: Session = Depends(get_db)):
             detail="Confidence must be between 0 and 1"
         )
     
-    db_event = Event(**event.dict())
+    db_event = Event(**event.model_dump())
     db.add(db_event)
     db.commit()
     db.refresh(db_event)
@@ -188,7 +195,7 @@ def create_watchlist_entry(entry: WatchlistCreate, db: Session = Depends(get_db)
             detail="Entity already in watchlist"
         )
     
-    db_entry = Watchlist(**entry.dict())
+    db_entry = Watchlist(**entry.model_dump())
     db.add(db_entry)
     db.commit()
     db.refresh(db_entry)
@@ -222,7 +229,7 @@ def get_watchlist_entry(entity_id: str, db: Session = Depends(get_db)):
 @app.post("/api/alerts", response_model=AlertResponse)
 def create_alert(alert: AlertCreate, db: Session = Depends(get_db)):
     """Create an alert (internal use)"""
-    db_alert = Alert(**alert.dict())
+    db_alert = Alert(**alert.model_dump())
     db.add(db_alert)
     db.commit()
     db.refresh(db_alert)
@@ -263,7 +270,7 @@ def acknowledge_alert(
     
     alert.alert_status = "ACKNOWLEDGED"
     alert.acknowledged_by = ack.operator_id
-    alert.acknowledged_at = datetime.utcnow()
+    alert.acknowledged_at = datetime.now(timezone.utc)
     
     db.commit()
     db.refresh(alert)
@@ -296,6 +303,6 @@ if __name__ == "__main__":
     uvicorn.run(
         "main:app",
         host="0.0.0.0",
-        port=8000,
-        reload=True
+        port=int(os.getenv("UVICORN_PORT", "8000")),
+        reload=os.getenv("ENV", "dev") == "dev"
     )
