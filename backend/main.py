@@ -215,6 +215,33 @@ async def create_event(event: EventCreate, db: Session = Depends(get_db)):
         "timestamp": db_event.timestamp.isoformat() if db_event.timestamp else None,
     })
 
+    # Auto match: wanted car seen -> make alert + push it live
+    from matcher import find_match, danger_level
+    hit = find_match(db, db_event.vehicle_number)
+    if hit:
+        auto = Alert(
+            event_id=db_event.event_id,
+            watchlist_id=hit.watchlist_id,
+            camera_id=db_event.camera_id,
+            matched_entity=db_event.vehicle_number,
+            entity_type=hit.entity_type or "Vehicle",
+            alert_type=hit.category or "Matched",
+            confidence=db_event.confidence,
+            location_lat=camera.latitude,
+            location_lng=camera.longitude,
+        )
+        db.add(auto)
+        db.commit()
+        db.refresh(auto)
+        await hub.broadcast("alerts", {
+            "type": "alert",
+            "alert_id": auto.alert_id,
+            "camera_id": auto.camera_id,
+            "matched_entity": auto.matched_entity,
+            "confidence": auto.confidence,
+            "severity": danger_level(db_event.confidence, hit.category),
+        })
+
     return db_event
 
 
