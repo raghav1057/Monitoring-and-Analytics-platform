@@ -266,6 +266,24 @@ def list_events(
     return events
 
 
+@app.get("/api/vehicles/{number}/trace")
+def vehicle_trace(number: str, db: Session = Depends(get_db)):
+    """Where has this car been? Oldest first, with map points."""
+    rows = db.query(Event).filter(Event.vehicle_number == number).order_by(Event.timestamp.asc()).limit(500).all()
+    points = []
+    for e in rows:
+        cam = db.query(Camera).filter(Camera.camera_id == e.camera_id).first()
+        points.append({
+            "timestamp": e.timestamp.isoformat() if e.timestamp else None,
+            "camera_id": e.camera_id,
+            "camera_name": cam.name if cam else e.camera_id,
+            "lat": cam.latitude if cam else None,
+            "lng": cam.longitude if cam else None,
+            "confidence": e.confidence,
+        })
+    return {"vehicle_number": number, "sightings": len(points), "route": points}
+
+
 # ===== WATCHLIST ENDPOINTS =====
 
 @app.post("/api/watchlist", response_model=WatchlistResponse)
