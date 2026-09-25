@@ -1,0 +1,26 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+.venv/
+env/
+*.egg-info/
+
+# Env / secrets - never commit real .env
+.env
+.env.local
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Frontend (yours)
+frontend/node_modules/
+frontend/dist/
+
+# Media / footage (large files stay local)
+*.mp4
+*.avi
+*.mkv
+!backend/video/samples/README.md
