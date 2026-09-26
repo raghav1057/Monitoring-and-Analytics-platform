@@ -155,7 +155,7 @@ export function SearchPage() {
                     <div style={{ fontSize: '16px', fontWeight: 700, fontFamily: tokens.fonts.mono, color: tokens.colors.emerald }}>
                       {(det.confidence * 100).toFixed(1)}%
                     </div>
-                    <div style={{ fontSize: '10px', color: '#64748b', fontFamily: tokens.fonts.mono }}>CONF</div>
+                    <div style={{ fontSize: '10px', color: '#64748a', fontFamily: tokens.fonts.mono }}>CONF</div>
                   </div>
                 </div>
 
