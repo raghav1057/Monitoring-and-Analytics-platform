@@ -166,7 +166,7 @@ export function DashboardPage() {
               fontSize: '12px', fontFamily: tokens.fonts.mono, color: tokens.colors.textSecondary,
               alignItems: 'center',
             }}>
-              <span style={{ color: '#64748b' }}>{new Date(event.timestamp).toLocaleTimeString()}</span>
+              <span style={{ color: '#64748a' }}>{new Date(event.timestamp).toLocaleTimeString()}</span>
               <span style={{ color: tokens.colors.text, fontWeight: 600 }}>{event.vehicle_number || '—'}</span>
               <span>{event.vehicle_type}</span>
               <span>{event.event_type}</span>
