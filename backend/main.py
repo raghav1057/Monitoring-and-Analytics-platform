@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Depends, HTTPException, status, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, Depends, HTTPException, status, WebSocket, WebSocketDisconnect, Request
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from datetime import datetime, timezone
@@ -70,8 +70,12 @@ def register(data: UserRegister, db: Session = Depends(get_db)):
 
 
 @app.post("/api/auth/login", response_model=TokenOut)
-def login(data: UserLogin, db: Session = Depends(get_db)):
+def login(data: UserLogin, request: Request, db: Session = Depends(get_db)):
     """Login with name + password. Get a token for other pages."""
+    from ratelimit import allowed
+    ip = request.client.host if request.client else "unknown"
+    if not allowed(f"login:{ip}"):
+        raise HTTPException(status_code=429, detail="Too many tries. Wait a minute.")
     user = db.query(User).filter(User.username == data.username).first()
     if not user or not check_password(data.password, user.password_hash):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Wrong name or password")
