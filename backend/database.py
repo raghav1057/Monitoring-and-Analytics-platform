@@ -94,6 +94,16 @@ class User(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
 
+class AuditLog(Base):
+    __tablename__ = "audit_log"
+
+    log_id = Column(Integer, primary_key=True, autoincrement=True)
+    username = Column(String(100), nullable=True)  # who did it
+    action = Column(String(10))  # POST, PUT, DELETE
+    path = Column(String(300))  # which page
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+
 # Create all tables
 def init_db():
     Base.metadata.create_all(bind=engine)

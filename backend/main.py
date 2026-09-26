@@ -9,7 +9,7 @@ from dotenv import load_dotenv
 from realtime import hub
 from auth import hash_password, check_password, make_token, current_user, admin_only
 
-from database import get_db, init_db, Camera, Event, Watchlist, Alert, User
+from database import get_db, init_db, Camera, Event, Watchlist, Alert, User, AuditLog
 from schemas import (
     CameraCreate, CameraResponse, CameraUpdate,
     EventCreate, EventResponse,
@@ -46,6 +46,29 @@ async def lifespan(app: FastAPI):
     yield
 
 app.router.lifespan_context = lifespan
+
+
+@app.middleware("http")
+async def audit_log(request: Request, call_next):
+    """Write down who changed what. Only writes, never reads."""
+    response = await call_next(request)
+    if request.method in ("POST", "PUT", "DELETE") and request.url.path.startswith("/api/"):
+        try:
+            from auth import read_token
+            who = None
+            auth_h = request.headers.get("authorization", "")
+            if auth_h.lower().startswith("bearer "):
+                data = read_token(auth_h[7:])
+                who = data.get("sub") if data else None
+            db = next(get_db())
+            try:
+                db.add(AuditLog(username=who, action=request.method, path=request.url.path))
+                db.commit()
+            finally:
+                db.close()
+        except Exception:
+            pass
+    return response
 
 
 # ===== HEALTH CHECK =====
