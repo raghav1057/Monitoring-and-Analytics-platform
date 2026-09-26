@@ -86,7 +86,11 @@ def me(user: User = Depends(current_user)):
 # ===== CAMERA ENDPOINTS =====
 
 @app.post("/api/cameras", response_model=CameraResponse)
-def create_camera(camera: CameraCreate, db: Session = Depends(get_db)):
+def create_camera(
+    camera: CameraCreate,
+    db: Session = Depends(get_db),
+    user: User = Depends(admin_only),
+):
     """Add a new camera to the registry"""
     
     # Check if camera already exists
@@ -126,9 +130,10 @@ def get_camera(camera_id: str, db: Session = Depends(get_db)):
 
 @app.put("/api/cameras/{camera_id}", response_model=CameraResponse)
 def update_camera(
-    camera_id: str, 
-    camera_update: CameraUpdate, 
-    db: Session = Depends(get_db)
+    camera_id: str,
+    camera_update: CameraUpdate,
+    db: Session = Depends(get_db),
+    user: User = Depends(admin_only),
 ):
     """Update camera details"""
     camera = db.query(Camera).filter(Camera.camera_id == camera_id).first()
@@ -148,7 +153,11 @@ def update_camera(
 
 
 @app.delete("/api/cameras/{camera_id}")
-def delete_camera(camera_id: str, db: Session = Depends(get_db)):
+def delete_camera(
+    camera_id: str,
+    db: Session = Depends(get_db),
+    user: User = Depends(admin_only),
+):
     """Disable/delete a camera"""
     camera = db.query(Camera).filter(Camera.camera_id == camera_id).first()
     if not camera:
@@ -318,7 +327,11 @@ def vehicle_trace(number: str, db: Session = Depends(get_db)):
 # ===== WATCHLIST ENDPOINTS =====
 
 @app.post("/api/watchlist", response_model=WatchlistResponse)
-def create_watchlist_entry(entry: WatchlistCreate, db: Session = Depends(get_db)):
+def create_watchlist_entry(
+    entry: WatchlistCreate,
+    db: Session = Depends(get_db),
+    user: User = Depends(admin_only),
+):
     """Add entry to watchlist"""
     
     # Check if already exists
@@ -402,7 +415,8 @@ def list_alerts(
 def acknowledge_alert(
     alert_id: int,
     ack: AlertAcknowledge,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    user: User = Depends(current_user),
 ):
     """Acknowledge an alert"""
     alert = db.query(Alert).filter(Alert.alert_id == alert_id).first()
