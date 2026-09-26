@@ -246,7 +246,7 @@ export function AlertsPage() {
                 : { backgroundColor: 'rgba(148,163,184,0.08)', color: '#64748b', border: '1px solid rgba(148,163,184,0.2)' }
               }
             />
-            <span style={{ color: '#64748b', fontFamily: tokens.fonts.primary }}>{entry.notes}</span>
+            <span style={{ color: '#64748a', fontFamily: tokens.fonts.primary }}>{entry.notes}</span>
           </div>
         ))}
       </div>
