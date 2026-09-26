@@ -1,0 +1,33 @@
+# One command demo: docker compose up
+# App: http://localhost:8000  Docs: http://localhost:8000/docs
+
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: cctv_db
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  api:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@db:5432/cctv_db
+      SECRET_KEY: change-me-before-demo
+      CORS_ORIGINS: http://localhost:5173,http://localhost:3000
+      ENV: prod
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  pgdata:
