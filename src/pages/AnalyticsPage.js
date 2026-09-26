@@ -112,7 +112,7 @@ export function AnalyticsPage() {
               backgroundColor: i % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.015)',
               fontSize: '12px', fontFamily: tokens.fonts.mono,
             }}>
-              <span style={{ color: '#64748b' }}>{new Date(e.timestamp).toLocaleTimeString()}</span>
+              <span style={{ color: '#64748a' }}>{new Date(e.timestamp).toLocaleTimeString()}</span>
               <span style={{ color: tokens.colors.text, fontWeight: 600 }}>{e.vehicle_number || '—'}</span>
               <span style={{ color: tokens.colors.textSecondary }}>{e.vehicle_type}</span>
               <span style={{ color: tokens.colors.textSecondary }}>{e.event_type}</span>
