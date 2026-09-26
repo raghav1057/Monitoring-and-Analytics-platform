@@ -84,6 +84,16 @@ class Alert(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
 
+class User(Base):
+    __tablename__ = "users"
+
+    user_id = Column(Integer, primary_key=True, autoincrement=True)
+    username = Column(String(100), nullable=False, unique=True)
+    password_hash = Column(String(300), nullable=False)
+    role = Column(String(20), default="operator")  # admin or operator
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+
 # Create all tables
 def init_db():
     Base.metadata.create_all(bind=engine)

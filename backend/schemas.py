@@ -114,6 +114,25 @@ class AlertAcknowledge(BaseModel):
     notes: Optional[str] = None
 
 
+# ===== AUTH SCHEMAS =====
+
+class UserRegister(BaseModel):
+    username: str
+    password: str = Field(min_length=4)
+    role: Optional[str] = "operator"
+
+
+class UserLogin(BaseModel):
+    username: str
+    password: str
+
+
+class TokenOut(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
+    role: str
+
+
 class AlertResponse(BaseModel):
     alert_id: int
     event_id: Optional[int] = None

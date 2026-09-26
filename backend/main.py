@@ -7,13 +7,15 @@ import os
 from dotenv import load_dotenv
 
 from realtime import hub
+from auth import hash_password, check_password, make_token, current_user, admin_only
 
-from database import get_db, init_db, Camera, Event, Watchlist, Alert
+from database import get_db, init_db, Camera, Event, Watchlist, Alert, User
 from schemas import (
     CameraCreate, CameraResponse, CameraUpdate,
     EventCreate, EventResponse,
     WatchlistCreate, WatchlistResponse,
-    AlertCreate, AlertResponse, AlertAcknowledge
+    AlertCreate, AlertResponse, AlertAcknowledge,
+    UserRegister, UserLogin, TokenOut,
 )
 
 load_dotenv()
@@ -50,6 +52,35 @@ app.router.lifespan_context = lifespan
 @app.get("/health")
 def health_check():
     return {"status": "ok", "timestamp": datetime.now(timezone.utc)}
+
+
+# ===== AUTH =====
+
+@app.post("/api/auth/register", response_model=TokenOut)
+def register(data: UserRegister, db: Session = Depends(get_db)):
+    """Make an account. First account becomes admin automatically."""
+    if db.query(User).filter(User.username == data.username).first():
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Name taken")
+    first = db.query(User).count() == 0
+    role = "admin" if first else (data.role if data.role in ("admin", "operator") else "operator")
+    user = User(username=data.username, password_hash=hash_password(data.password), role=role)
+    db.add(user)
+    db.commit()
+    return {"access_token": make_token(user.username, user.role), "token_type": "bearer", "role": user.role}
+
+
+@app.post("/api/auth/login", response_model=TokenOut)
+def login(data: UserLogin, db: Session = Depends(get_db)):
+    """Login with name + password. Get a token for other pages."""
+    user = db.query(User).filter(User.username == data.username).first()
+    if not user or not check_password(data.password, user.password_hash):
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Wrong name or password")
+    return {"access_token": make_token(user.username, user.role), "token_type": "bearer", "role": user.role}
+
+
+@app.get("/api/auth/me")
+def me(user: User = Depends(current_user)):
+    return {"username": user.username, "role": user.role}
 
 
 # ===== CAMERA ENDPOINTS =====
