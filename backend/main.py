@@ -218,13 +218,21 @@ def stream_info(camera_id: str, db: Session = Depends(get_db)):
     if not camera:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Camera not found")
     protocol = getattr(camera, "source_protocol", "file") or "file"
+    endpoint = camera.stream_url or camera_id
+    # "simulator:C001" style endpoints imply their own protocol
+    if endpoint and ":" in endpoint:
+        maybe = endpoint.split(":")[0].lower()
+        if maybe in ("simulator", "rtsp", "file"):
+            protocol = maybe
+            if maybe == "simulator":
+                endpoint = endpoint.split(":", 1)[1]
     live = False
     if protocol == "rtsp":
         live = camera.status == "Online"  # trust heartbeat, don't freeze on probe
     else:
         try:
             from video import make_source
-            src = make_source(protocol, camera.stream_url or camera_id)
+            src = make_source(protocol, endpoint)
             live = bool(src.open())
             src.close()
         except Exception:
