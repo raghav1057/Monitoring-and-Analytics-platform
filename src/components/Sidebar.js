@@ -7,6 +7,7 @@ const navItems = [
   { path: '/alerts', label: 'Alerts & Watchlist', icon: '⚠' },
   { path: '/search', label: 'Search & Trace', icon: '⌕' },
   { path: '/analytics', label: 'Analytics & Logs', icon: '≡' },
+  { path: '/map', label: 'Map', icon: '⊕'}
 ];
 
 const bottomItems = [
