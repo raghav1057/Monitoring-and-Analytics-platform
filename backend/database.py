@@ -7,13 +7,21 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-# Database URL
+# Database URL: Postgres if reachable, else a local file (zero setup).
 DATABASE_URL = os.getenv(
-    "DATABASE_URL", 
+    "DATABASE_URL",
     "postgresql://postgres:postgres@localhost:5432/cctv_db"
 )
 
-engine = create_engine(DATABASE_URL)
+try:
+    engine = create_engine(DATABASE_URL, pool_pre_ping=True)
+    with engine.connect():
+        pass
+    print(f"DB: Postgres ready")
+except Exception:
+    DATABASE_URL = "sqlite:///./cctv.db"
+    engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
+    print("DB: Postgres not reachable, using local file cctv.db (no install needed)")
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 

@@ -6,23 +6,21 @@ okDriver hiring challenge (Gujarat Police Hackathon 2026).
 
 ## Quick start
 
-**Need:** Python 3.12+, PostgreSQL 14+ (or Docker).
+**Need:** Python 3.12+ only. Postgres optional (Docker covers it).
 
-**With Docker (easiest):**
+**Manual (zero setup):**
+```bash
+cd backend
+pip install -r requirements.txt
+python seed.py     # demo: 2 cameras + 3 wanted cars + logins
+python main.py     # uses local file cctv.db if Postgres is not reachable
+```
+
+**With Docker (final demo with real Postgres):**
 ```bash
 docker compose up
 ```
 App: `http://localhost:8000` — Docs: `http://localhost:8000/docs`
-
-**Manual:**
-```bash
-createdb cctv_db
-cp backend/.env.example backend/.env   # set DATABASE_URL password
-cd backend
-pip install -r requirements.txt
-python seed.py     # demo: 2 cameras + 3 wanted cars + logins
-python main.py
-```
 
 **Login (demo):** `admin/admin123` (full) · `operator/op1234` (watch only)
 

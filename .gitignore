@@ -11,6 +11,9 @@ env/
 .env
 .env.local
 
+# Local databases (each dev has their own)
+*.db
+
 # OS
 .DS_Store
 Thumbs.db
