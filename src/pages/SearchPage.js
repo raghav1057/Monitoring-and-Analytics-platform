@@ -79,7 +79,7 @@ function RouteMap({ detections }) {
             const coords = data.routes[0].geometry.coordinates.map(c => [c[1], c[0]]);
             if (coords.length > 0 && mapInstanceRef.current) {
               L.polyline(coords, {
-                color: '#adc6ff',
+                color: '#1343b4',
                 weight: 3,
                 opacity: 0.8,
               }).addTo(mapInstanceRef.current);
